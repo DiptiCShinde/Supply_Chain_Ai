@@ -4,3 +4,5 @@
 .env.dev
 .env.prod
 .venv/
+data/raw/
+data/processed/
