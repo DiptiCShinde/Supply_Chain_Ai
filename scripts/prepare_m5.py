@@ -1,4 +1,5 @@
 """Prepare a small M5 subset: 2 CA stores, ~200 SKUs, last 730 days."""
+
 from pathlib import Path
 
 import numpy as np
@@ -32,7 +33,9 @@ def main():
     # choose a spread of fast and slow items in each category
     total = sales.copy()
     total["total"] = total[d_cols].sum(axis=1).astype("int64")
-    total = total.groupby(["item_id", "dept_id", "cat_id"], as_index=False)["total"].sum()
+    total = total.groupby(["item_id", "dept_id", "cat_id"], as_index=False)[
+        "total"
+    ].sum()
     total = total[total["total"] >= 200]
     picked = []
     for _, grp in total.groupby("cat_id"):
@@ -47,11 +50,15 @@ def main():
     prices = prices[prices["store_id"].isin(STORES) & prices["item_id"].isin(items)]
 
     # wide -> long
-    long = sales.melt(id_vars=id_cols, value_vars=d_cols, var_name="d", value_name="units")
+    long = sales.melt(
+        id_vars=id_cols, value_vars=d_cols, var_name="d", value_name="units"
+    )
     cal = calendar[["d", "date", "wm_yr_wk", "event_name_1", "snap_CA"]].copy()
     cal["is_event"] = cal["event_name_1"].notna().astype("int8")
     cal = cal.rename(columns={"snap_CA": "snap"})
-    long = long.merge(cal[["d", "date", "wm_yr_wk", "is_event", "snap"]], on="d", how="left")
+    long = long.merge(
+        cal[["d", "date", "wm_yr_wk", "is_event", "snap"]], on="d", how="left"
+    )
     long = long.merge(prices, on=["store_id", "item_id", "wm_yr_wk"], how="left")
     long = long.sort_values(["item_id", "store_id", "date"])
     long["sell_price"] = long.groupby(["item_id", "store_id"])["sell_price"].transform(
@@ -83,11 +90,18 @@ def main():
     # tiny sample that is safe to commit
     skus = products["sku_id"].head(50)
     last = sales_daily["date"].max() - pd.Timedelta(days=180)
-    sample = sales_daily[sales_daily["sku_id"].isin(skus) & (sales_daily["date"] > last)]
+    sample = sales_daily[
+        sales_daily["sku_id"].isin(skus) & (sales_daily["date"] > last)
+    ]
     sample.to_csv(SAMPLE / "sales_daily_sample.csv", index=False)
 
     print("products:", len(products), "| sales rows:", len(sales_daily))
-    print("date range:", sales_daily["date"].min().date(), "to", sales_daily["date"].max().date())
+    print(
+        "date range:",
+        sales_daily["date"].min().date(),
+        "to",
+        sales_daily["date"].max().date(),
+    )
 
 
 if __name__ == "__main__":
